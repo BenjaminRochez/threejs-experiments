@@ -154,31 +154,107 @@ function createLights(){
 /* Set up the sea
 ********************************************/
 
-Sea = function(){
-    // create the cylinder
-    // (radius top, radius bottom, h, segments of the radius, number of segments 
-    var geom = new THREE.CylinderGeometry(600,600,800,40,10);
+// Sea = function(){
+//     // create the cylinder
+//     // (radius top, radius bottom, h, segments of the radius, number of segments 
+//     var geom = new THREE.CylinderGeometry(600,600,800,40,10);
 
-    //rotate the geom on the x axis
+//     //rotate the geom on the x axis
+//     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI/2));
+
+//     // create the material
+//     var mat = new THREE.MeshPhongMaterial({
+//         color: Colors.blue,
+//         transparent: true,
+//         opacity: .6,
+//         flatShading: true
+//     });
+
+//     // to create an object in Three.js we need to create a mesh
+//     // which is a combinaison of a geometry and some material
+//     this.mesh = new THREE.Mesh(geom, mat);
+
+//     // Allow the see to receive shadows
+//     this.mesh.receiveShadow = true;
+// }
+
+// // Instantiate the sea and add it to the scene
+
+// var sea;
+
+// function createSea(){
+//     sea = new Sea();
+//     sea.mesh.position.y = -600;
+//     scene.add(sea.mesh);
+// }
+
+Sea = function(){
+    var geom = new THREE.CylinderGeometry(600,600,800,40,10);
     geom.applyMatrix(new THREE.Matrix4().makeRotationX(-Math.PI/2));
 
-    // create the material
+    // merge the vertices
+    geom.mergeVertices();
+
+    // get the vertices
+    var l = geom.vertices.length;
+    
+    // create an array to store data about each vertex
+    this.waves = [];
+
+    for (var i=0; i<l; i++){
+        //get each vertice
+        var v = geom.vertices[i];
+
+        // store the data
+        this.waves.push({
+            y: v.y,
+            x: v.x,
+            z: v.z,
+            // random angle
+            ang: Math.random()*Math.PI*2,
+            // random dist
+            amp: 5 + Math.random()*15,
+            // a random speed between 0.016 and 0.048 radians/frame
+            speed: 0.016 + Math.random() * 0.032
+        });
+    };
     var mat = new THREE.MeshPhongMaterial({
         color: Colors.blue,
         transparent: true,
-        opacity: .6,
+        opacity: .8,
         flatShading: true
     });
 
-    // to create an object in Three.js we need to create a mesh
-    // which is a combinaison of a geometry and some material
     this.mesh = new THREE.Mesh(geom, mat);
-
-    // Allow the see to receive shadows
     this.mesh.receiveShadow = true;
 }
 
-// Instantiate the sea and add it to the scene
+// Function that will be called each frame to update the position of the vertices to simulate the waves
+
+Sea.prototype.moveWaves = function(){
+    // get the vertices
+    var verts = this.mesh.geometry.vertices;
+    var l = verts.length;
+
+    for(var i =0; i<l; i++){
+        var v = verts[i];
+        // get the data
+        var vprops = this.waves[i];
+
+        // update the pos
+        v.x = vprops.x + Math.cos(vprops.ang)*vprops.amp;
+        v.y = vprops.y + Math.sin(vprops.ang)*vprops.amp;
+
+        // increment the angle for the next frame
+        vprops.ang += vprops.speed;
+    }
+
+    // tell the rendered the geometry of the sea has changed (because threejs caches it)
+    this.mesh.geometry.verticesNeedUpdate = true;
+
+    sea.mesh.rotation.z += .005;
+
+}
 
 var sea;
 
@@ -187,7 +263,6 @@ function createSea(){
     sea.mesh.position.y = -600;
     scene.add(sea.mesh);
 }
-
 
 /*
 To create and object
@@ -415,7 +490,7 @@ function loop(){
     updatePlane();
     
     // rotate the sea
-    sea.mesh.rotation.z += .005
+    sea.moveWaves();
     //rotate the sky
     sky.mesh.rotation.z += .01;
 
