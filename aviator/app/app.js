@@ -25,6 +25,10 @@ function init(){
     createPlane();
     createSea();
     createSky();
+
+    // add the mouse listener
+    document.addEventListener('mousemove', handleMouseMove, false);
+
     // start a loop to update the objects
     // and render the scene on each time
     loop();
@@ -270,7 +274,7 @@ Sky = function(){
         // set a random scale
         var s = 1+Math.random()*2;
         c.mesh.scale.set(s,s,s);
-
+        
         // add the mesh to the container
         this.mesh.add(c.mesh);
 
@@ -379,9 +383,72 @@ function createPlane(){
     scene.add(airplane.mesh);
 }
 
-/* Loop
+
+/* Mouse Move Handler
+********************************************/
+
+var mousePos = {
+    x:0,
+    y: 0
+}
+
+function handleMouseMove(e){
+    // convert the mouse pos to a normalized value between -1 and 1
+    var tx = -1 + (e.clientX / WIDTH) * 2;
+    // for the y axis we need to inverse the formula because the 2D y-axis goes the opposite direction of the 3D y-axis
+    var ty = 1 - (e.clientY / HEIGHT) * 2;
+    mousePos = {
+        x: tx,
+        y: ty
+    };
+    console.log(mousePos);
+}
+
+
+/* Loop animation
 ********************************************/
 function loop(){
+    // rotate the propeller
+    //airplane.propeller.rotation.x += .3;
+    
+    // update the plane on each frame
+    updatePlane();
+    
+    // rotate the sea
+    sea.mesh.rotation.z += .005
+    //rotate the sky
+    sky.mesh.rotation.z += .01;
+
+    //render
     renderer.render(scene, camera);
     requestAnimationFrame(loop);
+}
+
+function updatePlane(){
+    // move the airplane between -100 & 100 on the horizontal axis,
+    // and between 25 and 175 on the y
+    // we will use a normalize function to achieve that
+
+    var targetX = normalize(mousePos.x, -1, 1, -100, 100);
+    var targetY = normalize(mousePos.y, -1, 1, 25, 175);
+
+    // update the airplane position
+    airplane.mesh.position.y = targetY;
+    airplane.mesh.position.x = targetX;
+    airplane.propeller.rotation.x += .3;
+}
+
+// Normalize function 
+function normalize(v, vmin, vmax, tmin, tmax){
+    // 
+    var nv = Math.max(Math.min(v, vmax), vmin);
+    //
+    var dv = vmax - vmin;
+    // 
+    var pc = (nv - vmin)/dv;
+    //
+    var dt = tmax-tmin;
+    //
+    var tv = tmin + (pc*dt);
+    return tv;
 }
