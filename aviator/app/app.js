@@ -24,8 +24,7 @@ function init(){
     // add the objects
     //createPlane();
     createSea();
-    createSphere();
-    //createSky();
+    createSky();
     // start a loop to update the objects
     // and render the scene on each time
     loop();
@@ -54,7 +53,7 @@ function createScene(){
     scene = new THREE.Scene();
 
     // Add a fog effect to the scene
-    scene.fog = new THREE.Fog(0xff0000, 100, 950);
+    //scene.fog = new THREE.Fog(0xf7d9aa, 100, 950);
 
     // Create the camera
     aspectRatio = WIDTH/HEIGHT;
@@ -146,6 +145,11 @@ function createLights(){
 	scene.add(shadowLight);
 }
 
+
+
+/* Set up the sea
+********************************************/
+
 Sea = function(){
     // create the cylinder
     // (radius top, radius bottom, h, segments of the radius, number of segments 
@@ -180,29 +184,6 @@ function createSea(){
     scene.add(sea.mesh);
 }
 
-Sphere = function(){
-    var geom = new THREE.SphereGeometry(50, 320, 320);
-
-    var mat = new THREE.MeshBasicMaterial({
-        color: Colors.red,
-        opacity: 1,
-        flatShading: true,
-        transparent: true
-    });
-
-    this.mesh = new THREE.Mesh(geom, mat);
-
-    this.mesh.castShadow = true;
-}
-
-var sphere;
-
-function createSphere(){
-    sphere = new Sphere();
-    sphere.mesh.position.y = 100;
-    scene.add(sphere.mesh);
-}
-
 
 /*
 To create and object
@@ -214,6 +195,98 @@ To create and object
 
 
 
+
+/* Set up the clouds
+********************************************/
+
+Cloud = function(){
+    // create an empty container that will hold the parts of the cloud
+    this.mesh = new THREE.Object3D();
+
+    // create a cube geometry (will be duplicated to create the cloud)
+    var geom = new THREE.BoxGeometry(20,20,20);
+
+    // create a material
+    var mat = new THREE.MeshPhongMaterial({
+        color: Colors.white,
+    });
+
+    // duplicate the geom a random number of times
+    var nBlocs = 3+Math.floor(Math.random() * 3);
+    for(var i = 0; i<nBlocs; i++){
+
+        // create the mesh by cloning the geom
+        var m = new THREE.Mesh(geom, mat);
+
+        // set a random pos & rot
+        m.position.x = i*15;
+        m.position.y = Math.random()*10;
+        m.position.z = Math.random()*10;
+        m.rotation.z = Math.random() * Math.PI*2;
+        m.rotation.y = Math.random() * Math.PI*2;
+
+        // set the size random (.1 - 1)
+        var s = .1 + Math.random() * .9;
+        m.scale.set(s,s,s);
+
+        // allow each cube to cast and receive shadow
+        m.castShadow = true;
+        m.receiveShadow = true;
+
+        // add to the container
+        this.mesh.add(m);
+    }
+}
+
+// create the sky with 20 clouds at a random z-position
+Sky = function(){
+    this.mesh = new THREE.Object3D();
+
+    // number of clouds
+    this.nClouds = 20;
+
+    // To distribute the clouds consistently,
+    // we need to place them according to an uniform angle
+    var stepAngle = Math.PI*2 / this.nClouds;
+
+    // create the clouds
+    for(var i = 0; i<this.nClouds; i++){
+        var c = new Cloud();
+
+        // set the rotation & position of each cloud;
+        var a = stepAngle*i; // this is the final angle of the cloud
+        var h = 750 + Math.random()*200; // this is the distance between the center of the axis and the cloud itself
+        // Trigonometry!!! I hope you remember what you've learned in Math :)
+		// we are simply converting polar coordinates (angle, distance) into Cartesian coordinates (x, y)
+		c.mesh.position.y = Math.sin(a)*h;
+        c.mesh.position.x = Math.cos(a)*h;
+        
+        // rotate the cloud according to its position
+        c.mesh.rotation.z = a + Math.PI/2;
+
+        // position the cloud on a different depths of field
+        c.mesh.position.z = -400-Math.random()*400;
+
+        // set a random scale
+        var s = 1+Math.random()*2;
+        c.mesh.scale.set(s,s,s);
+
+        // add the mesh to the container
+        this.mesh.add(c.mesh);
+
+    }
+}
+
+// Now we instantiate the sky and push its center a bit
+// towards the bottom of the screen
+
+var sky;
+
+function createSky(){
+	sky = new Sky();
+	sky.mesh.position.y = -600;
+	scene.add(sky.mesh);
+}
 
 /* Loop
 ********************************************/
